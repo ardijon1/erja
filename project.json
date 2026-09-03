@@ -1,0 +1,46 @@
+{
+  "name": "ardalan-agent-site",
+  "displayName": "Ardalan Agent Site — Life Insurance Agent Landing Site",
+  "type": "web",
+  "status": "documentation-phase",
+  "platform": ["web-mobile-first"],
+  "language": "fa-IR",
+  "direction": "rtl",
+  "productModel": "reusable-template-per-client",
+  "techStack": {
+    "framework": "Next.js 15 (App Router)",
+    "language": "TypeScript",
+    "ui": "shadcn/ui (Radix)",
+    "css": "Tailwind CSS 4 (layout only)",
+    "font": "Vazirmatn",
+    "theming": "next-themes",
+    "orm": "Prisma 6",
+    "database": "SQLite (better-sqlite3)",
+    "forms": "react-hook-form + zod",
+    "qr": "qrcode",
+    "hosting": "self-hosted Node (PM2/Docker) on Iranian VPS"
+  },
+  "externalServices": [],
+  "aiUsage": "none — FAQ answers are static/agent-authored by design",
+  "deferredDecisions": [
+    "referral reward/incentive mechanism (legal clearance required before implementation)",
+    "multi-client/multi-tenant scaling beyond one-deployment-per-client"
+  ],
+  "docs": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "ARCHITECTURE.md",
+    "DESIGN.md",
+    "PROMPT.md",
+    "fa_summary.md"
+  ],
+  "skills": [
+    "scaffold-feature",
+    "add-api-route",
+    "code-review",
+    "refactor",
+    "write-tests"
+  ],
+  "sourceDoc": "طرح_سایت_نماینده_فروش_بیمه_عمر.docx"
+}

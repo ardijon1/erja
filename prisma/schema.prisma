@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Referrer {
+  id          String          @id @default(cuid())
+  code        String          @unique
+  displayName String
+  createdAt   DateTime        @default(now())
+  leads       Lead[]
+  clicks      ReferralClick[]
+  ratings     RatingRequest[]
+}
+
+model ReferralClick {
+  id         String   @id @default(cuid())
+  referrerId String
+  referrer   Referrer @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  userAgent  String?
+
+  @@index([referrerId])
+  @@index([createdAt])
+}
+
+/// درخواست امتیاز تک‌مصرف — لینک توکن‌دار برای بیمه‌شده/سرنخ
+model RatingRequest {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  referrerId  String
+  referrer    Referrer  @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  leadId      String?
+  rating      Int?
+  comment     String?
+  submittedAt DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([referrerId])
+  @@index([expiresAt])
+}
+
+model Lead {
+  id             String    @id @default(cuid())
+  name           String
+  phone          String
+  monthlyIncome  Int?
+  dependents     Int?
+  debt           Int?
+  estimatedCover Int?
+  message        String?
+  referrerId     String?
+  referrer       Referrer? @relation(fields: [referrerId], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
+  status         String    @default("new")
+  policyNumber   String?
+  policyAt       DateTime?
+
+  @@index([referrerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model SiteContent {
+  id                String   @id @default("default")
+  name              String
+  title             String
+  photo             String
+  bio               String
+  shortBio          String
+  yearsExperience   Int
+  insuredCount      Int
+  satisfactionScore Float
+  phone             String
+  website           String
+  address           String?
+  agencyCode        String?
+  whatsappNumber    String
+  whatsappMessage   String
+  telegramUsername  String?
+  telegramMessage   String?
+  eitaaUsername     String?
+  eitaaMessage      String?
+  rubikaUsername    String?
+  rubikaMessage     String?
+  whatsappApiToken  String? // reserved — not used yet (future WhatsApp Business API)
+  telegramBotToken  String? // reserved — not used yet (future Bot API)
+  eitaaBotToken     String? // reserved
+  rubikaBotToken    String? // reserved
+  calculatorTitle   String?
+  calculatorDesc    String?
+  faqPreviewTitle   String?
+  referralTitle     String?
+  referralDesc      String?
+  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now())
+}
+
+model FaqItem {
+  id        String   @id @default(cuid())
+  category  String
+  question  String
+  answer    String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([order])
+}

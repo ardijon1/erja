@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ardalan-site",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Users\\Ardalan\\.claude\\.claude\\start-erja.cmd"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}
