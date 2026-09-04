@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthToken, purgeExpiredSessions, verifySession } from "@/lib/auth";
+import { getAuthToken, getSessionAgentId, purgeExpiredSessions, verifySession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildReferralBaseUrl } from "@/lib/referral-codes";
 import { computeRatingSummary, findActiveTokenForReferrer } from "@/lib/rating";
@@ -13,8 +13,12 @@ export async function GET(): Promise<NextResponse> {
   if (!token || !(await verifySession(token))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // opportunistic cleanup
+
+  const agentId = await getSessionAgentId(token);
   void purgeExpiredSessions();
+
+  // Filter by agentId if agent is logged in
+  const leadWhere = agentId ? { agentId } : {};
 
   try {
     const referrersRaw = await prisma.referrer.findMany({
@@ -53,6 +57,7 @@ export async function GET(): Promise<NextResponse> {
     }
 
     const leadsRaw = await prisma.lead.findMany({
+      where: leadWhere,
       orderBy: { createdAt: "desc" },
       take: 100,
       include: {

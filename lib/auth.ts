@@ -39,14 +39,15 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
 /**
  * Create a new admin session.
  * Generates a 32-byte random hex token, stores its sha256 hash with 24h expiry, returns raw token for cookie.
+ * If agentId is provided, links the session to that agent (for agent-specific dashboards).
  */
-export async function createSession(): Promise<{ token: string; tokenHash: string; expiresAt: Date }> {
+export async function createSession(agentId?: string): Promise<{ token: string; tokenHash: string; expiresAt: Date }> {
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 
   await prisma.adminSession.create({
-    data: { tokenHash, expiresAt },
+    data: { tokenHash, expiresAt, agentId: agentId ?? null },
   });
 
   return { token, tokenHash, expiresAt };
@@ -72,6 +73,25 @@ export async function verifySession(token: string): Promise<boolean> {
   }
 
   return true;
+}
+
+/**
+ * Get the agentId from a session token.
+ * Returns null for super-admin sessions (no agentId), or the agent's ID for agent-specific sessions.
+ */
+export async function getSessionAgentId(token: string): Promise<string | null> {
+  if (!token) return null;
+  const tokenHash = hashToken(token);
+
+  const session = await prisma.adminSession.findUnique({
+    where: { tokenHash },
+    select: { agentId: true, expiresAt: true },
+  });
+
+  if (!session) return null;
+  if (session.expiresAt.getTime() < Date.now()) return null;
+
+  return session.agentId ?? null;
 }
 
 /**

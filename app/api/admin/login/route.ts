@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { createSession, purgeExpiredSessions, setAuthCookie, verifyPassword } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { cleanupIfNeeded, getClientIp, rateLimit } from "@/lib/rate-limit";
 
@@ -9,6 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const loginSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
   password: z.string().min(1, "password is required"),
 });
 
@@ -34,11 +36,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { password } = parsed.data;
+  const { slug, password } = parsed.data;
+
+  // Super-admin: slug "admin" uses the global ADMIN_PASSWORD_HASH
+  if (slug === "admin") {
+    let isValid = false;
+    try {
+      isValid = await verifyPassword(password, env.ADMIN_PASSWORD_HASH);
+    } catch {
+      isValid = false;
+    }
+
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    const { token, expiresAt } = await createSession();
+    await setAuthCookie(token, expiresAt);
+    void purgeExpiredSessions();
+    return NextResponse.json({ success: true, role: "admin" }, { status: 200 });
+  }
+
+  // Agent login: look up agent by slug
+  const agent = await prisma.agent.findUnique({ where: { slug } });
+  if (!agent || !agent.active) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
 
   let isValid = false;
   try {
-    isValid = await verifyPassword(password, env.ADMIN_PASSWORD_HASH);
+    isValid = await verifyPassword(password, agent.passwordHash);
   } catch {
     isValid = false;
   }
@@ -47,10 +74,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const { token, expiresAt } = await createSession();
+  const { token, expiresAt } = await createSession(agent.id);
   await setAuthCookie(token, expiresAt);
-  // opportunistic cleanup of expired sessions
   void purgeExpiredSessions();
 
-  return NextResponse.json({ success: true }, { status: 200 });
+  return NextResponse.json({ success: true, role: "agent", name: agent.name }, { status: 200 });
 }

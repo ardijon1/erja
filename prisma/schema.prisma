@@ -56,12 +56,15 @@ model Lead {
   message        String?
   referrerId     String?
   referrer       Referrer? @relation(fields: [referrerId], references: [id], onDelete: SetNull)
+  agentId        String?
+  agent          Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
   createdAt      DateTime  @default(now())
   status         String    @default("new")
   policyNumber   String?
   policyAt       DateTime?
 
   @@index([referrerId])
+  @@index([agentId])
   @@index([status])
   @@index([createdAt])
 }
@@ -69,10 +72,29 @@ model Lead {
 model AdminSession {
   id        String   @id @default(cuid())
   tokenHash String   @unique
+  agentId   String?
+  agent     Agent?   @relation(fields: [agentId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([expiresAt])
+  @@index([agentId])
+}
+
+/// نماینده فروش — هر نماینده لینک اختصاصی و داشبورد جدا دارد
+model Agent {
+  id           String   @id @default(cuid())
+  name         String                    // نام نماینده
+  slug         String   @unique          // لینک اختصاصی: /r/{slug}
+  passwordHash String                    // رمز عبور bcrypt
+  phone        String?                   // شماره تماس اختیاری
+  active       Boolean @default(true)    // فعال/غیرفعال
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  leads        Lead[]
+  sessions     AdminSession[]
+
+  @@index([slug])
 }
 
 model SiteContent {

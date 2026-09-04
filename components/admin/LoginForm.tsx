@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FloatingField } from "@/components/admin/FloatingField";
 
 const loginSchema = z.object({
+  slug: z.string().trim().min(1, "لطفاً نام کاربری را وارد کنید."),
   password: z.string().trim().min(1, "لطفاً رمز عبور را وارد کنید."),
 });
 
@@ -20,7 +21,7 @@ export function LoginForm() {
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { password: "" },
+    defaultValues: { slug: "", password: "" },
   });
 
   async function onSubmit(values: LoginValues) {
@@ -28,14 +29,14 @@ export function LoginForm() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: values.password }),
+        body: JSON.stringify({ slug: values.slug, password: values.password }),
       });
 
       const data = (await res.json().catch(() => ({}))) as { error?: string };
 
       if (!res.ok) {
         if (res.status === 401) {
-          form.setError("root", { message: "رمز عبور نادرست است." });
+          form.setError("root", { message: "نام کاربری یا رمز عبور نادرست است." });
           return;
         }
         if (res.status === 429) {
@@ -60,10 +61,29 @@ export function LoginForm() {
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
         <CardTitle className="text-base">پنل مدیریت</CardTitle>
-        <CardDescription className="leading-6">برای ورود، رمز عبور را وارد کنید.</CardDescription>
+        <CardDescription className="leading-6">برای ورود، نام کاربری و رمز عبور را وارد کنید.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+          <div className="flex flex-col gap-0.5 relative">
+            <FloatingField
+              label="نام کاربری"
+              id="slug"
+              type="text"
+              autoComplete="username"
+              dir="ltr"
+              className="text-start"
+              autoFocus
+              aria-invalid={!!form.formState.errors.slug}
+              {...form.register("slug")}
+            />
+            {form.formState.errors.slug ? (
+              <p role="alert" className="text-xs text-destructive">
+                {form.formState.errors.slug.message}
+              </p>
+            ) : null}
+          </div>
+
           <div className="flex flex-col gap-0.5 relative">
             <FloatingField
               label="رمز عبور"
@@ -72,7 +92,6 @@ export function LoginForm() {
               autoComplete="current-password"
               dir="ltr"
               className="text-start"
-              autoFocus
               aria-invalid={!!form.formState.errors.password}
               {...form.register("password")}
             />
