@@ -1,6 +1,8 @@
-FROM node:20-alpine
+FROM node:20-slim
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+RUN corepack enable && corepack prepare pnpm@8.15.9 --activate
 
 WORKDIR /app
 
