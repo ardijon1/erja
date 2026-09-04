@@ -30,6 +30,20 @@ function loadEnv(): Env {
     } as Env;
   }
 
+  // During build (CI, Railway deploy), env vars are not yet available.
+  // Return safe placeholders — real validation happens at runtime when the server starts.
+  const isBuildTime = !process.env.DATABASE_URL && !process.env.ADMIN_PASSWORD_HASH;
+  if (isBuildTime) {
+    return {
+      DATABASE_URL: "",
+      ADMIN_PASSWORD_HASH: "",
+      WHATSAPP_NUMBER: "",
+      SITE_DOMAIN: "",
+      SESSION_SECRET: "0".repeat(32),
+      NODE_ENV: "development",
+    } as Env;
+  }
+
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
     const details = parsed.error.issues
